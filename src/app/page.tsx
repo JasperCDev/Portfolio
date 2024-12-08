@@ -1,3 +1,6 @@
+"use client";
+import { Button } from "@/components/ui/button";
+
 export default function Home() {
-  return "MY NAME JASPER CHAUVIN ME A SOFTWARE ENGINEER";
+  return <Button onClick={() => alert("click me")}>click me</Button>;
 }
