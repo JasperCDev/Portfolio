@@ -8,67 +8,136 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { balanceHistory } from "@/data";
+import { PortfolioChart } from "./portfolio-chart";
+import { Line, LineChart, YAxis } from "recharts";
+import { Box } from "@/components/ui/box";
+
+const minValueAll = Math.min(...balanceHistory.map((item) => item.all));
+const minValueStocks = Math.min(...balanceHistory.map((item) => item.stocks));
+const minValueRealEstate = Math.min(
+  ...balanceHistory.map((item) => item.realEstate)
+);
+
+const balanceHistoryStocks = balanceHistory.map((b) => ({ value: b.stocks }));
+const balanceHistoryRealEstate = balanceHistory.map((b) => ({
+  value: b.realEstate,
+}));
 
 export default function Home() {
   return (
-    <div className="grid grid-cols-1 gap-8 m-8 w-full">
+    <div className="grid grid-cols-1 px-8 py-2 w-full">
       <section>
-        <h1 className="text-4xl font-extrabold">Overview</h1>
+        <h1 className="text-2xl font-extrabold">Portfolio Overview</h1>
         <Separator className="my-4" />
       </section>
-      <section>
-        <span className="text-l font-bold">Portfolio Balance</span>
-        <h3 className="text-6xl font-bold">$1,234,567,89</h3>
-      </section>
-      <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Card Title</CardTitle>
-            <CardDescription>Card Description</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p>Card Content</p>
-          </CardContent>
-          <CardFooter>
-            <p>Card Footer</p>
-          </CardFooter>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Card Title</CardTitle>
-            <CardDescription>Card Description</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p>Card Content</p>
-          </CardContent>
-          <CardFooter>
-            <p>Card Footer</p>
-          </CardFooter>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Card Title</CardTitle>
-            <CardDescription>Card Description</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p>Card Content</p>
-          </CardContent>
-          <CardFooter>
-            <p>Card Footer</p>
-          </CardFooter>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Card Title</CardTitle>
-            <CardDescription>Card Description</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p>Card Content</p>
-          </CardContent>
-          <CardFooter>
-            <p>Card Footer</p>
-          </CardFooter>
-        </Card>
+      <section className="grid grid-cols-1 gap-8 w-full">
+        <div className="flex flex-row items-center">
+          <span>
+            <span className="text-l font-bold">Portfolio Balance</span>
+            <h3 className="text-6xl font-bold">$1,234,567.89</h3>
+          </span>
+          <LineChart width={168} height={84} data={balanceHistory}>
+            <YAxis domain={[minValueAll, "auto"]} hide />
+            <Line
+              type="natural"
+              stroke="purple"
+              strokeWidth="4"
+              dataKey="value"
+              dot={false}
+            />
+          </LineChart>
+        </div>
+        <div className="flex flex-row flex-wrap gap-6">
+          <Box className="w-[375px]">
+            <h4 className="text-xl col-span-2 font-bold mb-4">Asset Mix</h4>
+            <div className="flex flex-row gap-8">
+              <PortfolioChart />
+              <div className="flex flex-col gap-1 p-2">
+                <p>
+                  <div className="inline-block w-[10px] h-[10px] bg-chart-1"></div>{" "}
+                  <span>Cash</span>
+                </p>
+                <p className="align-middle">
+                  <div className="inline-block w-[10px] h-[10px] bg-chart-2"></div>{" "}
+                  <span>Stocks</span>{" "}
+                  <LineChart
+                    width={50}
+                    height={24}
+                    data={balanceHistoryStocks}
+                    className="inline-block"
+                    margin={{ left: 0, right: 0, top: 0, bottom: 0 }}
+                  >
+                    <YAxis domain={[minValueStocks, "auto"]} hide />
+                    <Line
+                      type="natural"
+                      stroke="hsl(var(--chart-2))"
+                      strokeWidth="2"
+                      dataKey="value"
+                      dot={false}
+                    />
+                  </LineChart>
+                </p>
+                <p className="align-middle">
+                  <div className="inline-block w-[10px] h-[10px] bg-chart-3"></div>{" "}
+                  <span>Real Estate</span>{" "}
+                  <LineChart
+                    width={50}
+                    height={24}
+                    data={balanceHistoryRealEstate}
+                    className="inline-block"
+                    margin={{ left: 0, right: 0, top: 0, bottom: 0 }}
+                  >
+                    <YAxis domain={[minValueRealEstate, "auto"]} hide />
+                    <Line
+                      type="natural"
+                      stroke="hsl(var(--chart-3))"
+                      strokeWidth="2"
+                      dataKey="value"
+                      dot={false}
+                    />
+                  </LineChart>
+                </p>
+              </div>
+            </div>
+          </Box>
+          <Card>
+            <CardHeader>
+              <CardTitle>Card Title</CardTitle>
+              <CardDescription>Card Description</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p>Card Content</p>
+            </CardContent>
+            <CardFooter>
+              <p>Card Footer</p>
+            </CardFooter>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Card Title</CardTitle>
+              <CardDescription>Card Description</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p>Card Content</p>
+            </CardContent>
+            <CardFooter>
+              <p>Card Footer</p>
+            </CardFooter>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Card Title</CardTitle>
+              <CardDescription>Card Description</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p>Card Content</p>
+            </CardContent>
+            <CardFooter>
+              <p>Card Footer</p>
+            </CardFooter>
+          </Card>
+        </div>
       </section>
     </div>
   );

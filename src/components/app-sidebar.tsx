@@ -5,10 +5,12 @@ import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
+  SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { Separator } from "@radix-ui/react-separator";
 import { ChartArea, CircleDollarSign, MapPinHouse } from "lucide-react";
 
 const items = [
@@ -32,9 +34,11 @@ const items = [
 export function AppSidebar() {
   return (
     <Sidebar>
+      <div className="p-2">
+        <h3 className="text-4xl font-extrabold text-chart-4">Ally Financial</h3>
+      </div>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Application</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {items.map((item) => (
