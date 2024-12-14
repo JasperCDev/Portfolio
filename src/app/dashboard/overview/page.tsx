@@ -1,14 +1,6 @@
 "use client";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-  CardFooter,
-} from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { balanceHistory } from "@/data";
+import { balanceHistory, balances } from "@/data";
 import { PortfolioChart } from "./portfolio-chart";
 import { Line, LineChart, YAxis } from "recharts";
 import { Box } from "@/components/ui/box";
@@ -35,7 +27,7 @@ export default function Home() {
         <div className="flex flex-row items-center">
           <span>
             <span className="text-l font-bold">Portfolio Balance</span>
-            <h3 className="text-6xl font-bold">$1,234,567.89</h3>
+            <h3 className="text-6xl font-bold">${balances.all}</h3>
           </span>
           <LineChart width={168} height={84} data={balanceHistory}>
             <YAxis domain={[minValueAll, "auto"]} hide />
@@ -54,11 +46,11 @@ export default function Home() {
             <div className="flex flex-row gap-8">
               <PortfolioChart />
               <div className="flex flex-col gap-1 p-2">
-                <p>
+                <div>
                   <div className="inline-block w-[10px] h-[10px] bg-chart-1"></div>{" "}
                   <span>Cash</span>
-                </p>
-                <p className="align-middle">
+                </div>
+                <div className="align-middle">
                   <div className="inline-block w-[10px] h-[10px] bg-chart-2"></div>{" "}
                   <span>Stocks</span>{" "}
                   <LineChart
@@ -77,8 +69,8 @@ export default function Home() {
                       dot={false}
                     />
                   </LineChart>
-                </p>
-                <p className="align-middle">
+                </div>
+                <div className="align-middle">
                   <div className="inline-block w-[10px] h-[10px] bg-chart-3"></div>{" "}
                   <span>Real Estate</span>{" "}
                   <LineChart
@@ -97,46 +89,16 @@ export default function Home() {
                       dot={false}
                     />
                   </LineChart>
-                </p>
+                </div>
               </div>
             </div>
           </Box>
-          <Card>
-            <CardHeader>
-              <CardTitle>Card Title</CardTitle>
-              <CardDescription>Card Description</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p>Card Content</p>
-            </CardContent>
-            <CardFooter>
-              <p>Card Footer</p>
-            </CardFooter>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Card Title</CardTitle>
-              <CardDescription>Card Description</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p>Card Content</p>
-            </CardContent>
-            <CardFooter>
-              <p>Card Footer</p>
-            </CardFooter>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Card Title</CardTitle>
-              <CardDescription>Card Description</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p>Card Content</p>
-            </CardContent>
-            <CardFooter>
-              <p>Card Footer</p>
-            </CardFooter>
-          </Card>
+          <Box className="w-[375px]">
+            <h4 className="text-xl col-span-2 font-bold mb-4">Real Estate</h4>
+          </Box>
+          <Box className="w-[375px]">
+            <h4 className="text-xl col-span-2 font-bold mb-4">Stocks</h4>
+          </Box>
         </div>
       </section>
     </div>

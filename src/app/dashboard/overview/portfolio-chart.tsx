@@ -43,10 +43,23 @@ export function PortfolioChart() {
           cx="50%" // Center horizontally
           cy="50%" // Center vertically
           outerRadius="100%" // Ensure it scales to fit the container
-        ></Pie>
-        <LabelList>
-          
-        </LabelList>
+        >
+          <LabelList
+            dataKey="value"
+            className="fill-background"
+            stroke="none"
+            fontSize={16}
+            formatter={(value: number) => {
+              if (value < 1000) {
+                return "$" + value;
+              }
+              if (value < 1000000) {
+                return "$" + (value / 1000).toFixed(2) + "K";
+              }
+              return "$" + (value / 1000000).toFixed(2) + "M";
+            }}
+          />
+        </Pie>
       </PieChart>
     </ChartContainer>
   );
