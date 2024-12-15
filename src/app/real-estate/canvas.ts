@@ -23,7 +23,9 @@ class Building extends Rectangle {
     this.id = (++Building.idHelper).toString();
     this.draggedX = x;
     this.draggedY = y;
-    this.graphics = new Graphics().rect(x, y, width, height).stroke("red");
+    this.graphics = new Graphics().rect(0, 0, width, height).stroke("red");
+    this.graphics.x = x;
+    this.graphics.y = y;
   }
 }
 
