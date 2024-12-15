@@ -21,11 +21,11 @@ class Building extends Rectangle {
     this.x = x;
     this.y = y;
     this.id = (++Building.idHelper).toString();
-    this.draggedX = x;
-    this.draggedY = y;
     this.graphics = new Graphics().rect(0, 0, width, height).stroke("red");
     this.graphics.x = x;
     this.graphics.y = y;
+    this.draggedX = x;
+    this.draggedY = y;
   }
 }
 
@@ -49,7 +49,6 @@ let pointerDownPos: Point | null = null;
 
 let focusedElemId: string | null = null;
 let draggingElemId: string | null = null;
-let draggingElemLocalPos: Point | null = null;
 
 export function initCanvas() {
   const app = new Application();
@@ -75,22 +74,28 @@ export function initCanvas() {
 
   function tick() {
     for (const building of buildings) {
-      console.log(building.graphics.x);
       let isHover = pointerPos.intersects(building);
       let isFocus = isHover && leftPointerBtnDown && pointerDown;
       let isClick = isHover && pointerUp;
-      if (isFocus) {
+      if (isFocus && draggingElemId === null) {
         focusedElemId = building.id;
+
+        // Convert global pointer position to local coordinates
+        const localPointerDownPos = root.toLocal(
+          pointerDownPos!,
+          building.graphics.parent
+        );
+
+        // Calculate the offset relative to the rectangle's current position
+        building.draggedX = localPointerDownPos.x - building.graphics.x;
+        building.draggedY = localPointerDownPos.y - building.graphics.y;
       }
-      if (focusedElemId === building.id) {
+
+      if (focusedElemId === building.id && draggingElemId == null) {
         let pointerXDiff = pointerDownPos!.x - pointerPos.x;
         let pointerYDiff = pointerDownPos!.y - pointerPos.y;
         if (Math.abs(pointerXDiff) >= 3 || Math.abs(pointerYDiff) >= 3) {
           draggingElemId = building.id;
-          draggingElemLocalPos = new Point(
-            building.graphics.x,
-            building.graphics.y
-          );
         }
       }
       let isDragging = draggingElemId === building.id;
@@ -100,17 +105,28 @@ export function initCanvas() {
           pointerPos,
           building.graphics.parent
         );
-        // console.log(building.graphics.toGlobal(new Point(0, 0)).x);
-        building.graphics.x = localPointerPos.x;
-        building.graphics.y = localPointerPos.y;
+        let newX = localPointerPos.x - building.draggedX;
+        let newY = localPointerPos.y - building.draggedY;
+
+        building.graphics.x = Math.round(newX / 8) * 8;
+        building.graphics.y = Math.round(newY / 8) * 8;
       }
+
       if (isDragEnd) {
-        // building.x = building.graphics.x;
-        // building.y = building.graphics.y;
+        draggingElemId = null;
+        let globalPoint = building.graphics.toGlobal(new Point(0, 0));
+        building.x = globalPoint.x;
+        building.y = globalPoint.y;
       }
     }
-    pointerUp = false;
-    pointerDown = false;
+    if (pointerUp) {
+      pointerUp = false;
+      pointerDown = false;
+      focusedElemId = null;
+      pointerDownPos = null;
+      rightPointerBtnDown = false;
+      leftPointerBtnDown = false;
+    }
   }
 
   function handlePointerDown(e: FederatedPointerEvent) {
@@ -129,14 +145,7 @@ export function initCanvas() {
   }
 
   function handlePointerUp() {
-    rightPointerBtnDown = false;
-    leftPointerBtnDown = false;
     pointerUp = true;
-    pointerDown = false;
-    draggingElemId = null;
-    draggingElemLocalPos = null;
-    focusedElemId = null;
-    pointerDownPos = null;
   }
 
   function handlePointerLeave() {
