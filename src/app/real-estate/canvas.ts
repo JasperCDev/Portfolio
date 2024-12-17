@@ -21,7 +21,9 @@ class Building extends Rectangle {
     this.x = x;
     this.y = y;
     this.id = (++Building.idHelper).toString();
-    this.graphics = new Graphics().rect(0, 0, width, height).stroke("red");
+    this.graphics = new Graphics()
+      .rect(0, 0, width, height)
+      .fill(`rgb(24 24 27 / 1)`);
     this.graphics.x = x;
     this.graphics.y = y;
     this.draggedX = x;
@@ -29,30 +31,26 @@ class Building extends Rectangle {
   }
 }
 
-let buildings: Array<Building> = [
-  new Building(100, 100, 100, 100),
-  new Building(202, 100, 100, 100),
-  new Building(304, 100, 100, 100),
-  new Building(100, 202, 100, 100),
-  new Building(202, 202, 100, 100),
-  new Building(304, 202, 100, 100),
-];
+let buildings: Array<Building> = Array.from(
+  { length: 10 },
+  (_, i) => new Building(i * 500 + 2 * i, i * 500 + 2 * i, 500, 500)
+);
 
 let leftPointerBtnDown = false;
 let rightPointerBtnDown = false;
-let pointerUp = false;
-let pointerDown = false;
+let pointerReleased = false;
+let pointerPressed = false;
 
 let pointerPos = new Rectangle(0, 0, 10, 10);
-let prevPointerPos = new Rectangle(0, 0, 10, 10);
+let prevGlobalPointerPos = new Rectangle(0, 0, 10, 10);
 let pointerDownPos: Point | null = null;
 
 let focusedElemId: string | null = null;
 let draggingElemId: string | null = null;
 
 export function initCanvas() {
-  const app = new Application();
-  const root = new Container();
+  let app = new Application();
+  let root = new Container();
   root.addChild(...buildings.map((b) => b.graphics));
   app.stage.addChild(root);
   app.init({ background: "black", resizeTo: window }).then(() => {
@@ -73,25 +71,16 @@ export function initCanvas() {
   });
 
   function tick() {
-    for (const building of buildings) {
+    for (let building of buildings) {
       let isHover = pointerPos.intersects(building);
-      let isFocus = isHover && leftPointerBtnDown && pointerDown;
-      let isClick = isHover && pointerUp;
-      if (isFocus && draggingElemId === null) {
+      if (pointerPressed && isHover) {
         focusedElemId = building.id;
 
-        // Convert global pointer position to local coordinates
-        const localPointerDownPos = root.toLocal(
-          pointerDownPos!,
-          building.graphics.parent
-        );
-
-        // Calculate the offset relative to the rectangle's current position
-        building.draggedX = localPointerDownPos.x - building.graphics.x;
-        building.draggedY = localPointerDownPos.y - building.graphics.y;
+        building.draggedX = pointerDownPos!.x - building.graphics.x;
+        building.draggedY = pointerDownPos!.y - building.graphics.y;
       }
-
-      if (focusedElemId === building.id && draggingElemId == null) {
+      let isFocus = focusedElemId === building.id;
+      if (isFocus && draggingElemId == null) {
         let pointerXDiff = pointerDownPos!.x - pointerPos.x;
         let pointerYDiff = pointerDownPos!.y - pointerPos.y;
         if (Math.abs(pointerXDiff) >= 3 || Math.abs(pointerYDiff) >= 3) {
@@ -99,40 +88,40 @@ export function initCanvas() {
         }
       }
       let isDragging = draggingElemId === building.id;
-      let isDragEnd = isDragging && pointerUp;
+      let isDragEnd = isDragging && pointerReleased;
       if (isDragging) {
-        const localPointerPos = root.toLocal(
-          pointerPos,
-          building.graphics.parent
-        );
-        let newX = localPointerPos.x - building.draggedX;
-        let newY = localPointerPos.y - building.draggedY;
-
-        building.graphics.x = Math.round(newX / 8) * 8;
-        building.graphics.y = Math.round(newY / 8) * 8;
+        let newX = pointerPos.x - building.draggedX;
+        let newY = pointerPos.y - building.draggedY;
+        building.graphics.x = Math.round(newX / 16) * 16;
+        building.graphics.y = Math.round(newY / 16) * 16;
       }
 
       if (isDragEnd) {
         draggingElemId = null;
-        let globalPoint = building.graphics.toGlobal(new Point(0, 0));
-        building.x = globalPoint.x;
-        building.y = globalPoint.y;
+        building.x = building.graphics.x;
+        building.y = building.graphics.y;
       }
     }
-    if (pointerUp) {
-      pointerUp = false;
-      pointerDown = false;
+    if (pointerReleased) {
+      pointerReleased = false;
       focusedElemId = null;
       pointerDownPos = null;
       rightPointerBtnDown = false;
       leftPointerBtnDown = false;
     }
+    pointerPressed = false;
+
+    let fps = Ticker.shared.FPS;
+    if (fps < 59.5) {
+      console.log(Ticker.shared.FPS);
+    }
   }
 
   function handlePointerDown(e: FederatedPointerEvent) {
     e.preventDefault();
-    pointerDown = true;
-    pointerDownPos = new Point(e.global.x, e.global.y);
+    pointerPressed = true;
+    let localPointerDownPos = root.toLocal(e.global);
+    pointerDownPos = new Point(localPointerDownPos.x, localPointerDownPos.y);
 
     switch (e.button) {
       case 0:
@@ -145,7 +134,7 @@ export function initCanvas() {
   }
 
   function handlePointerUp() {
-    pointerUp = true;
+    pointerReleased = true;
   }
 
   function handlePointerLeave() {
@@ -154,32 +143,41 @@ export function initCanvas() {
   }
 
   function handlePointerMove(e: FederatedPointerEvent) {
-    pointerPos.x = e.global.x;
-    pointerPos.y = e.global.y;
+    let globalPointerPos = e.global;
+    let localPointerPos = root.toLocal(globalPointerPos);
+
+    pointerPos.x = localPointerPos.x;
+    pointerPos.y = localPointerPos.y;
+
+    pointerPos.width = 3 / root.scale.x;
+    pointerPos.height = 3 / root.scale.y;
 
     if (rightPointerBtnDown) {
-      const deltaX = pointerPos.x - prevPointerPos.x;
-      const deltaY = pointerPos.y - prevPointerPos.y;
+      // Calculate the delta (difference) of the pointer's movement in screen space
+      let deltaX = globalPointerPos.x - prevGlobalPointerPos.x;
+      let deltaY = globalPointerPos.y - prevGlobalPointerPos.y;
+
+      // Adjust the delta by the inverse of the scale (to correctly pan at different zoom levels)
       root.x += deltaX;
       root.y += deltaY;
     }
 
-    prevPointerPos.x = e.global.x;
-    prevPointerPos.y = e.global.y;
+    prevGlobalPointerPos.x = globalPointerPos.x;
+    prevGlobalPointerPos.y = globalPointerPos.y;
   }
 
   function handleWheel(e: FederatedWheelEvent) {
     e.preventDefault();
 
-    const zoomFactor = 0.1;
-    const oldScale = root.scale.x;
+    let zoomFactor = 0.1;
+    let oldScale = root.scale.x;
 
     // Determine the new scale
-    const newScale = oldScale + (e.deltaY < 0 ? zoomFactor : -zoomFactor);
-    const clampedScale = Math.max(0.5, Math.min(3, newScale));
+    let newScale = oldScale + (e.deltaY < 0 ? zoomFactor : -zoomFactor);
+    let clampedScale = Math.max(0.1, Math.min(10, newScale));
 
     // Convert cursor position to local container coordinates
-    const localPointerPos = root.toLocal({ x: e.clientX, y: e.clientY });
+    let localPointerPos = root.toLocal({ x: e.clientX, y: e.clientY });
 
     // Adjust the root's position to keep the zoom centered on the cursor
     root.scale.set(clampedScale, clampedScale);
