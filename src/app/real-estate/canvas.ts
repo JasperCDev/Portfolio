@@ -8,32 +8,52 @@ import {
   Point,
   Rectangle,
   Ticker,
+  Text,
+  TextStyle,
 } from "pixi.js";
+
+const GRID_UNIT_SIZE = 16;
 
 class Building extends Rectangle {
   static idHelper = 0;
   id: string;
   draggedX: number;
   draggedY: number;
-  graphics: Graphics;
+  container: Container;
+  collisionBounds: Rectangle;
   constructor(x: number, y: number, width: number, height: number) {
     super(x, y, width, height);
     this.x = x;
     this.y = y;
     this.id = (++Building.idHelper).toString();
-    this.graphics = new Graphics()
-      .rect(0, 0, width, height)
-      .fill(`rgb(24 24 27 / 1)`);
-    this.graphics.x = x;
-    this.graphics.y = y;
+    this.container = new Container();
+    let graphics = new Graphics().rect(0, 0, width, height).fill(`white`);
+    const style = new TextStyle({ fontSize: 24, fill: "white" });
+    const text = new Text({ text: "Building " + this.id, x: 0, y: -30, style });
+    this.container.addChild(graphics);
+    this.container.addChild(text);
+    this.container.x = x;
+    this.container.y = y;
     this.draggedX = x;
     this.draggedY = y;
+    this.collisionBounds = new Rectangle(
+      x - GRID_UNIT_SIZE,
+      y - GRID_UNIT_SIZE,
+      width + GRID_UNIT_SIZE * 2,
+      height + GRID_UNIT_SIZE * 2
+    );
   }
 }
 
 let buildings: Array<Building> = Array.from(
   { length: 10 },
-  (_, i) => new Building(i * 500 + 2 * i, i * 500 + 2 * i, 500, 500)
+  (_, i) =>
+    new Building(
+      i * 160 + GRID_UNIT_SIZE * 2 * i,
+      i * 160 + GRID_UNIT_SIZE * 2 * i,
+      160,
+      160
+    )
 );
 
 let leftPointerBtnDown = false;
@@ -51,7 +71,24 @@ let draggingElemId: string | null = null;
 export function initCanvas() {
   let app = new Application();
   let root = new Container();
-  root.addChild(...buildings.map((b) => b.graphics));
+  // let g = new Graphics();
+  // for (
+  //   let i = -(300 * GRID_UNIT_SIZE);
+  //   i < 300 * GRID_UNIT_SIZE;
+  //   i += GRID_UNIT_SIZE
+  // ) {
+  //   for (
+  //     let j = -(300 * GRID_UNIT_SIZE);
+  //     j < 300 * GRID_UNIT_SIZE;
+  //     j += GRID_UNIT_SIZE
+  //   ) {
+  //     g.circle(i, j, 1);
+  //   }
+  // }
+  // g.fill("lightgrey");
+  // root.addChild(g);
+
+  root.addChild(...buildings.map((b) => b.container));
   app.stage.addChild(root);
   app.init({ background: "black", resizeTo: window }).then(() => {
     document.querySelector("main")!.appendChild(app.canvas);
@@ -71,13 +108,14 @@ export function initCanvas() {
   });
 
   function tick() {
+    let now = Date.now();
     for (let building of buildings) {
       let isHover = pointerPos.intersects(building);
       if (pointerPressed && isHover) {
         focusedElemId = building.id;
 
-        building.draggedX = pointerDownPos!.x - building.graphics.x;
-        building.draggedY = pointerDownPos!.y - building.graphics.y;
+        building.draggedX = pointerDownPos!.x - building.container.x;
+        building.draggedY = pointerDownPos!.y - building.container.y;
       }
       let isFocus = focusedElemId === building.id;
       if (isFocus && draggingElemId == null) {
@@ -92,14 +130,15 @@ export function initCanvas() {
       if (isDragging) {
         let newX = pointerPos.x - building.draggedX;
         let newY = pointerPos.y - building.draggedY;
-        building.graphics.x = Math.round(newX / 16) * 16;
-        building.graphics.y = Math.round(newY / 16) * 16;
+
+        building.container.x = Math.round(newX / 16) * 16;
+        building.container.y = Math.round(newY / 16) * 16;
       }
 
       if (isDragEnd) {
         draggingElemId = null;
-        building.x = building.graphics.x;
-        building.y = building.graphics.y;
+        building.x = building.container.x;
+        building.y = building.container.y;
       }
     }
     if (pointerReleased) {
@@ -111,10 +150,11 @@ export function initCanvas() {
     }
     pointerPressed = false;
 
-    let fps = Ticker.shared.FPS;
-    if (fps < 59.5) {
-      console.log(Ticker.shared.FPS);
-    }
+    // let fps = Ticker.shared.FPS;
+    // if (fps < 58) {
+    //   console.log(Ticker.shared.FPS);
+    // }
+    // console.log(Date.now() - now);
   }
 
   function handlePointerDown(e: FederatedPointerEvent) {
@@ -169,20 +209,26 @@ export function initCanvas() {
   function handleWheel(e: FederatedWheelEvent) {
     e.preventDefault();
 
+    // Define zoom factor
     let zoomFactor = 0.1;
     let oldScale = root.scale.x;
 
-    // Determine the new scale
+    // Determine the new scale based on the scroll direction
     let newScale = oldScale + (e.deltaY < 0 ? zoomFactor : -zoomFactor);
     let clampedScale = Math.max(0.1, Math.min(10, newScale));
 
-    // Convert cursor position to local container coordinates
+    // Convert cursor position to local coordinates in the root container
     let localPointerPos = root.toLocal({ x: e.clientX, y: e.clientY });
 
-    // Adjust the root's position to keep the zoom centered on the cursor
+    // Set the new scale
     root.scale.set(clampedScale, clampedScale);
-    root.x -= (localPointerPos.x - root.x) * (clampedScale - oldScale);
-    root.y -= (localPointerPos.y - root.y) * (clampedScale - oldScale);
+
+    // Calculate the difference in scale
+    let scaleDiff = clampedScale - oldScale;
+
+    // Adjust the root's position to keep the mouse cursor in the same position in the viewport
+    root.x -= (localPointerPos.x - root.x) * scaleDiff;
+    root.y -= (localPointerPos.y - root.y) * scaleDiff;
   }
 }
 
