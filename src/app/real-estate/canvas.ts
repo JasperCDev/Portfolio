@@ -12,207 +12,273 @@ import {
   TextStyle,
 } from "pixi.js";
 
-const GRID_UNIT_SIZE = 16;
+const GRID_UNIT_SIZE: number = 16;
 
-class Building extends Rectangle {
-  static idHelper = 0;
-  id: string;
-  draggedX: number;
-  draggedY: number;
-  container: Container;
-  collisionBounds: Rectangle;
+// Define application variables
+let app: Application;
+let root: Container;
+let buildings: Building[] = [];
+let pointerPos: Rectangle = new Rectangle(0, 0, 10, 10);
+let prevGlobalPointerPos: Rectangle = new Rectangle(0, 0, 10, 10);
+let pointerDownPos: Point | null = null;
+let leftPointerBtnDown: boolean = false;
+let rightPointerBtnDown: boolean = false;
+let pointerReleased: boolean = false;
+let pointerPressed: boolean = false;
+let focusedElemId: string | null = null;
+let draggingElemId: string | null = null;
+let idHelper: number = 0;
 
-  constructor(x: number, y: number, width: number, height: number) {
-    super(x, y, width, height);
-    this.id = (++Building.idHelper).toString();
-    this.container = new Container();
-
-    const graphics = new Graphics()
-      .beginFill(0xffffff)
-      .drawRect(0, 0, width, height)
-      .endFill();
-    const style = new TextStyle({ fontSize: 24, fill: "white" });
-    const text = new Text(`Building ${this.id}`, style);
-    text.y = -30;
-
-    this.container.addChild(graphics, text);
-    this.container.position.set(x, y);
-    this.draggedX = x;
-    this.draggedY = y;
-
-    this.collisionBounds = new Rectangle(
-      x - GRID_UNIT_SIZE,
-      y - GRID_UNIT_SIZE,
-      width + GRID_UNIT_SIZE * 2,
-      height + GRID_UNIT_SIZE * 2
-    );
-  }
+interface BuildingState {
+  hover: boolean;
+  dragging: boolean;
+  validPlacement: boolean;
 }
 
-export class CanvasApp {
-  private app: Application;
-  private root: Container;
-  private buildings: Building[] = [];
-  private pointerPos = new Rectangle(0, 0, 10, 10);
-  private prevGlobalPointerPos = new Rectangle(0, 0, 10, 10);
-  private pointerDownPos: Point | null = null;
-  private leftPointerBtnDown = false;
-  private rightPointerBtnDown = false;
-  private pointerReleased = false;
-  private pointerPressed = false;
-  private focusedElemId: string | null = null;
-  private draggingElemId: string | null = null;
+interface Building {
+  id: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  container: Container;
+  graphics: Graphics;
+  label: Text;
+  draggedX: number;
+  draggedY: number;
+  invalidPlacement: boolean;
+}
 
-  constructor() {
-    this.app = new Application();
-    this.root = new Container();
+function createBuilding(
+  x: number,
+  y: number,
+  width: number,
+  height: number
+): Building {
+  const id = (++idHelper).toString();
+  const container = new Container();
 
-    this.buildings = Array.from(
-      { length: 10 },
-      (_, i) =>
-        new Building(
-          i * 160 + GRID_UNIT_SIZE * 2 * i,
-          i * 160 + GRID_UNIT_SIZE * 2 * i,
-          160,
-          160
-        )
+  const graphics = new Graphics().rect(0, 0, width, height).fill("white");
+  const style = new TextStyle({ fontSize: 24, fill: "white" });
+  const label = new Text({ text: `Building ${id}`, style, x: 0, y: -30 });
+
+  container.addChild(graphics, label);
+  container.position.set(x, y);
+
+  return {
+    id,
+    x,
+    y,
+    width,
+    height,
+    container,
+    graphics,
+    label,
+    draggedX: x,
+    draggedY: y,
+    invalidPlacement: false,
+  };
+}
+
+function renderBuilding(building: Building, newState: BuildingState): void {
+  building.container.removeChildren();
+  const fill = building.invalidPlacement ? "red" : "white";
+  const stroke = "white";
+
+  building.graphics = new Graphics()
+    .rect(0, 0, building.width, building.height)
+    .fill(fill)
+    .stroke(stroke);
+
+  const style = new TextStyle({ fontSize: 24, fill: "white" });
+  building.label = new Text({
+    text: `Building ${building.id}`,
+    style,
+    x: 0,
+    y: -30,
+  });
+
+  building.container.addChild(building.graphics, building.label);
+  building.container.x = building.x;
+  building.container.y = building.y;
+}
+
+export async function initCanvasApp() {
+  app = new Application();
+  root = new Container();
+
+  buildings = Array.from({ length: 10 }, (_, i) =>
+    createBuilding(
+      i * 320 + GRID_UNIT_SIZE * 2 * i,
+      i * 320 + GRID_UNIT_SIZE * 2 * i,
+      320,
+      320
+    )
+  );
+
+  root.addChild(...buildings.map((b) => b.container));
+  app.stage.addChild(root);
+
+  await app.init({ background: "black", resizeTo: window });
+  const mainElement = document.querySelector("main");
+  mainElement!.appendChild(app.canvas);
+  initEvents();
+}
+
+function tick(): void {
+  buildings.forEach((building) => {
+    const isHover = pointerPos.intersects(
+      new Rectangle(building.x, building.y, building.width, building.height)
     );
+    if (isHover && draggingElemId === null) {
+      building.graphics
+        .clear()
+        .rect(0, 0, building.width, building.height)
+        .fill("white")
+        .stroke({ color: "red", width: 3 });
+    } else {
+      building.graphics
+        .clear()
+        .rect(0, 0, building.width, building.height)
+        .fill("white");
+    }
 
-    this.root.addChild(...this.buildings.map((b) => b.container));
-    this.app.stage.addChild(this.root);
+    if (pointerPressed && isHover) {
+      focusedElemId = building.id;
+      building.draggedX = pointerDownPos!.x - building.container.x;
+      building.draggedY = pointerDownPos!.y - building.container.y;
+    }
 
-    this.app.init({ background: "black", resizeTo: window }).then(() => {
-      document.querySelector("main")!.appendChild(this.app.canvas);
-      this.initEvents();
-    });
-  }
-
-  private initEvents() {
-    this.app.stage.eventMode = "static";
-    this.app.stage.hitArea = this.app.screen;
-    this.app.stage.on("pointerdown", this.handlePointerDown.bind(this));
-    this.app.stage.on("pointerup", this.handlePointerUp.bind(this));
-    this.app.stage.on("pointermove", this.handlePointerMove.bind(this));
-    this.app.stage.on("pointerleave", this.handlePointerLeave.bind(this));
-    this.app.stage.on("wheel", this.handleWheel.bind(this));
-    this.app.stage.on("contextmenu", (e) => e.preventDefault());
-
-    document.addEventListener("contextmenu", (e) => e.preventDefault());
-    Ticker.shared.add(this.tick.bind(this));
-  }
-
-  private tick() {
-    for (const building of this.buildings) {
-      const isHover = this.pointerPos.intersects(building);
-      if (this.pointerPressed && isHover) {
-        this.focusedElemId = building.id;
-        building.draggedX = this.pointerDownPos!.x - building.container.x;
-        building.draggedY = this.pointerDownPos!.y - building.container.y;
+    const isFocus = focusedElemId === building.id;
+    if (isFocus && draggingElemId == null) {
+      const pointerXDiff = pointerDownPos!.x - pointerPos.x;
+      const pointerYDiff = pointerDownPos!.y - pointerPos.y;
+      if (Math.abs(pointerXDiff) >= 3 || Math.abs(pointerYDiff) >= 3) {
+        draggingElemId = building.id;
       }
+    }
 
-      const isFocus = this.focusedElemId === building.id;
-      if (isFocus && this.draggingElemId == null) {
-        const pointerXDiff = this.pointerDownPos!.x - this.pointerPos.x;
-        const pointerYDiff = this.pointerDownPos!.y - this.pointerPos.y;
-        if (Math.abs(pointerXDiff) >= 3 || Math.abs(pointerYDiff) >= 3) {
-          this.draggingElemId = building.id;
+    const isDragging = draggingElemId === building.id;
+    if (isDragging) {
+      const newX = pointerPos.x - building.draggedX;
+      const newY = pointerPos.y - building.draggedY;
+
+      building.container.x = Math.round(newX / GRID_UNIT_SIZE) * GRID_UNIT_SIZE;
+      building.container.y = Math.round(newY / GRID_UNIT_SIZE) * GRID_UNIT_SIZE;
+
+      let isValid = true;
+      buildings.forEach((b) => {
+        if (b.id === building.id) return;
+        if (
+          b.container
+            .getBounds()
+            .rectangle.intersects(building.container.getBounds().rectangle)
+        ) {
+          isValid = false;
+        }
+      });
+
+      building.invalidPlacement = !isValid;
+
+      if (pointerReleased) {
+        draggingElemId = null;
+        if (isValid) {
+          building.x = building.container.x;
+          building.y = building.container.y;
+        } else {
+          building.container.x = building.x;
+          building.container.y = building.y;
         }
       }
-
-      const isDragging = this.draggingElemId === building.id;
-      if (isDragging) {
-        const newX = this.pointerPos.x - building.draggedX;
-        const newY = this.pointerPos.y - building.draggedY;
-        building.container.x =
-          Math.round(newX / GRID_UNIT_SIZE) * GRID_UNIT_SIZE;
-        building.container.y =
-          Math.round(newY / GRID_UNIT_SIZE) * GRID_UNIT_SIZE;
-      }
-
-      if (isDragging && this.pointerReleased) {
-        this.draggingElemId = null;
-        building.x = building.container.x;
-        building.y = building.container.y;
-      }
     }
+  });
 
-    if (this.pointerReleased) {
-      this.resetPointerState();
-    }
-
-    this.pointerPressed = false;
+  if (pointerReleased) {
+    resetPointerState();
   }
 
-  private handlePointerDown(e: FederatedPointerEvent) {
-    e.preventDefault();
-    this.pointerPressed = true;
-    const localPointerDownPos = this.root.toLocal(e.global);
-    this.pointerDownPos = new Point(
-      localPointerDownPos.x,
-      localPointerDownPos.y
-    );
+  pointerPressed = false;
+}
 
-    if (e.button === 0) this.leftPointerBtnDown = true;
-    if (e.button === 2) this.rightPointerBtnDown = true;
+function initEvents(): void {
+  app.stage.eventMode = "static";
+  app.stage.hitArea = app.screen;
+  app.stage.on("pointerdown", handlePointerDown);
+  app.stage.on("pointerup", handlePointerUp);
+  app.stage.on("pointermove", handlePointerMove);
+  app.stage.on("pointerleave", handlePointerLeave);
+  app.stage.on("wheel", handleWheel);
+  app.stage.on("contextmenu", (e) => e.preventDefault());
+
+  document.addEventListener("contextmenu", (e) => e.preventDefault());
+  Ticker.shared.add(tick);
+}
+
+function handlePointerDown(e: FederatedPointerEvent): void {
+  e.preventDefault();
+  pointerPressed = true;
+  const localPointerDownPos = root.toLocal(e.global);
+  pointerDownPos = new Point(localPointerDownPos.x, localPointerDownPos.y);
+
+  if (e.button === 0) leftPointerBtnDown = true;
+  if (e.button === 2) rightPointerBtnDown = true;
+}
+
+function handlePointerUp(): void {
+  pointerReleased = true;
+}
+
+function handlePointerLeave(): void {
+  resetPointerState();
+}
+
+function handlePointerMove(e: FederatedPointerEvent): void {
+  const globalPointerPos = e.global;
+  const localPointerPos = root.toLocal(globalPointerPos);
+
+  pointerPos.x = localPointerPos.x;
+  pointerPos.y = localPointerPos.y;
+  pointerPos.width = 3 / root.scale.x;
+  pointerPos.height = 3 / root.scale.y;
+
+  if (rightPointerBtnDown) {
+    const deltaX = globalPointerPos.x - prevGlobalPointerPos.x;
+    const deltaY = globalPointerPos.y - prevGlobalPointerPos.y;
+    root.x += deltaX;
+    root.y += deltaY;
   }
 
-  private handlePointerUp() {
-    this.pointerReleased = true;
-  }
+  prevGlobalPointerPos.x = globalPointerPos.x;
+  prevGlobalPointerPos.y = globalPointerPos.y;
+}
 
-  private handlePointerLeave() {
-    this.resetPointerState();
-  }
+function handleWheel(e: FederatedWheelEvent): void {
+  e.preventDefault();
 
-  private handlePointerMove(e: FederatedPointerEvent) {
-    const globalPointerPos = e.global;
-    const localPointerPos = this.root.toLocal(globalPointerPos);
+  const zoomFactor = 0.1;
+  const oldScale = root.scale.x;
+  const newScale = oldScale + (e.deltaY < 0 ? zoomFactor : -zoomFactor);
+  const clampedScale = Math.max(0.1, Math.min(10, newScale));
 
-    this.pointerPos.x = localPointerPos.x;
-    this.pointerPos.y = localPointerPos.y;
+  const localPointerPos = root.toLocal({ x: e.clientX, y: e.clientY });
+  root.scale.set(clampedScale, clampedScale);
 
-    this.pointerPos.width = 3 / this.root.scale.x;
-    this.pointerPos.height = 3 / this.root.scale.y;
+  const scaleDiff = clampedScale - oldScale;
+  root.x -= (localPointerPos.x - root.x) * scaleDiff;
+  root.y -= (localPointerPos.y - root.y) * scaleDiff;
+}
 
-    if (this.rightPointerBtnDown) {
-      const deltaX = globalPointerPos.x - this.prevGlobalPointerPos.x;
-      const deltaY = globalPointerPos.y - this.prevGlobalPointerPos.y;
-      this.root.x += deltaX;
-      this.root.y += deltaY;
-    }
+function resetPointerState(): void {
+  pointerReleased = false;
+  focusedElemId = null;
+  pointerDownPos = null;
+  leftPointerBtnDown = false;
+  rightPointerBtnDown = false;
+}
 
-    this.prevGlobalPointerPos.x = globalPointerPos.x;
-    this.prevGlobalPointerPos.y = globalPointerPos.y;
-  }
-
-  private handleWheel(e: FederatedWheelEvent) {
-    e.preventDefault();
-
-    const zoomFactor = 0.1;
-    const oldScale = this.root.scale.x;
-    const newScale = oldScale + (e.deltaY < 0 ? zoomFactor : -zoomFactor);
-    const clampedScale = Math.max(0.1, Math.min(10, newScale));
-
-    const localPointerPos = this.root.toLocal({ x: e.clientX, y: e.clientY });
-    this.root.scale.set(clampedScale, clampedScale);
-
-    const scaleDiff = clampedScale - oldScale;
-    this.root.x -= (localPointerPos.x - this.root.x) * scaleDiff;
-    this.root.y -= (localPointerPos.y - this.root.y) * scaleDiff;
-  }
-
-  private resetPointerState() {
-    this.pointerReleased = false;
-    this.focusedElemId = null;
-    this.pointerDownPos = null;
-    this.leftPointerBtnDown = false;
-    this.rightPointerBtnDown = false;
-  }
-
-  public dragCreate(x: number, y: number) {
-    let building = new Building(0, 0, 160, 160);
-    this.buildings.push(building);
-    this.root.addChild(building.container);
-    this.draggingElemId = building.id;
-  }
+export function dragCreate(): void {
+  const building = createBuilding(0, 0, 160, 160);
+  buildings.push(building);
+  root.addChild(building.container);
+  draggingElemId = building.id;
 }
