@@ -46,7 +46,7 @@ interface Building {
   label: Text;
   draggedX: number;
   draggedY: number;
-  invalidPlacement: boolean;
+  state: BuildingState;
 }
 
 function createBuilding(
@@ -76,13 +76,25 @@ function createBuilding(
     label,
     draggedX: x,
     draggedY: y,
-    invalidPlacement: false,
+    state: {
+      validPlacement: true,
+      dragging: false,
+      hover: false,
+    },
   };
 }
 
 function renderBuilding(building: Building, newState: BuildingState): void {
+  // only re-render when necessary state changes
+  if (
+    newState.hover === building.state.hover &&
+    newState.dragging === building.state.dragging &&
+    newState.validPlacement === building.state.validPlacement
+  ) {
+    return;
+  }
   building.container.removeChildren();
-  const fill = building.invalidPlacement ? "red" : "white";
+  const fill = building.state.validPlacement ? "white" : "red";
   const stroke = "white";
 
   building.graphics = new Graphics()
@@ -99,8 +111,6 @@ function renderBuilding(building: Building, newState: BuildingState): void {
   });
 
   building.container.addChild(building.graphics, building.label);
-  building.container.x = building.x;
-  building.container.y = building.y;
 }
 
 export async function initCanvasApp() {
@@ -127,21 +137,10 @@ export async function initCanvasApp() {
 
 function tick(): void {
   buildings.forEach((building) => {
-    const isHover = pointerPos.intersects(
-      new Rectangle(building.x, building.y, building.width, building.height)
-    );
-    if (isHover && draggingElemId === null) {
-      building.graphics
-        .clear()
-        .rect(0, 0, building.width, building.height)
-        .fill("white")
-        .stroke({ color: "red", width: 3 });
-    } else {
-      building.graphics
-        .clear()
-        .rect(0, 0, building.width, building.height)
-        .fill("white");
-    }
+    const isHover =
+      pointerPos.intersects(
+        new Rectangle(building.x, building.y, building.width, building.height)
+      ) && draggingElemId === null;
 
     if (pointerPressed && isHover) {
       focusedElemId = building.id;
@@ -178,8 +177,6 @@ function tick(): void {
         }
       });
 
-      building.invalidPlacement = !isValid;
-
       if (pointerReleased) {
         draggingElemId = null;
         if (isValid) {
@@ -190,6 +187,14 @@ function tick(): void {
           building.container.y = building.y;
         }
       }
+      renderBuilding(building, {
+        dragging: isDragging,
+        hover: isHover,
+        validPlacement: isValid,
+      });
+      building.state.validPlacement = !isValid;
+      building.state.hover = isHover;
+      building.state.validPlacement = isValid;
     }
   });
 
