@@ -94,7 +94,7 @@ function renderBuilding(building: Building, newState: BuildingState): void {
     return;
   }
   building.container.removeChildren();
-  const fill = building.state.validPlacement ? "white" : "red";
+  const fill = newState.validPlacement ? "white" : "red";
   const stroke = "white";
 
   building.graphics = new Graphics()
@@ -186,6 +186,7 @@ function tick(): void {
           building.container.x = building.x;
           building.container.y = building.y;
         }
+        isValid = true;
       }
       renderBuilding(building, {
         dragging: isDragging,
