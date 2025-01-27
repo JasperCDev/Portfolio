@@ -2,56 +2,42 @@
 
 import { ChevronDown } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-
+import { SlideHero } from "./slideHero";
 let y = 0;
+let list = [SlideHero, SlideHero, SlideHero];
 
 export default function Home() {
   let ref = useRef<HTMLDivElement>(null);
+  let [currIndx, setCurrIndx] = useState(0);
 
   function handleClick() {
     y += window.innerHeight;
     ref.current!.style.transform = `translateY(-${y}px)`;
+    ref.current!.ontransitionend = () => {
+      setCurrIndx((prev) => prev + 1);
+    };
   }
 
   return (
     <div className="h-[100vh] overflow-hidden">
-      <div ref={ref} className="transition-transform">
-        <div className="h-[100vh] flex flex-col items-center justify-center p-20 bg-[radial-gradient(circle_at_center_bottom,_theme(colors.slate.600),_theme(colors.slate.900))]">
-          <div>
-            <h1 className="text-8xl mb-2 font-mono uppercase">
-              Jasper Chauvin
-            </h1>
-            <p className="text-xl">
-              Software Engineer with 4 years of experience.
-            </p>
-          </div>
-        </div>
-        <div className="h-[100vh] flex flex-col items-center justify-center p-20 bg-[radial-gradient(circle_at_center_bottom,_red,_blue)]">
-          <div>
-            <h1 className="text-8xl mb-2 font-mono uppercase">
-              Dashboard Web Applications
-            </h1>
-            <p className="text-xl">
-              High-density with real-time data and analytics.
-            </p>
-          </div>
-        </div>
-        <div className="h-[100vh] flex flex-col items-center justify-center p-20 bg-[radial-gradient(circle_at_center_bottom,green,pink)]">
-          <div>
-            <h1 className="text-8xl mb-2 font-mono uppercase">
-              Complex interactions
-            </h1>
-            <p className="text-xl">Interactive visualizations</p>
-          </div>
-        </div>
+      <div ref={ref} className="transition-transform ease-in-out duration-1000">
+        {list.map((Slide, indx) => {
+          let shown = indx === currIndx;
+          if (!shown) {
+            return <div key={indx} className="h-[100vh]"></div>;
+          }
+          return <Slide key={indx} />;
+        })}
       </div>
-      <button
-        onClick={handleClick}
-        className="absolute bottom-0 left-[50%] flex flex-col items-center"
-      >
-        Learn More
-        <ChevronDown size={36} />
-      </button>
+      {currIndx >= list.length - 1 ? null : (
+        <button
+          onClick={handleClick}
+          className="absolute bottom-0 left-[50%] flex flex-col items-center"
+        >
+          Learn More
+          <ChevronDown size={36} />
+        </button>
+      )}
     </div>
   );
 }
