@@ -1,7 +1,7 @@
 "use client";
 import { Separator } from "@/components/ui/separator";
 import { balanceHistory, balances } from "@/data";
-import { PortfolioChart } from "./portfolio-chart";
+import { PortfolioChart } from "./portfolio_chart";
 import { Line, LineChart, YAxis } from "recharts";
 import { Box } from "@/components/ui/box";
 

@@ -127,7 +127,7 @@ export async function initCanvasApp() {
   );
 
   root.addChild(...buildings.map((b) => b.container));
-  app.stage.addChild(root);
+  app.stage.addChild(root); 
 
   await app.init({ background: "black", resizeTo: window });
   const mainElement = document.querySelector("main");

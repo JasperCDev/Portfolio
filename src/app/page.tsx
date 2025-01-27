@@ -2,9 +2,12 @@
 
 import { ChevronDown } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { SlideHero } from "./slideHero";
+import { SlideHero } from "./slide_hero";
+import { SlideDashboard } from "./slide_dashboard";
+import { SlideComplex } from "./slide_complex";
+
 let y = 0;
-let list = [SlideHero, SlideHero, SlideHero];
+let list = [SlideHero, SlideDashboard, SlideComplex];
 
 export default function Home() {
   let ref = useRef<HTMLDivElement>(null);
