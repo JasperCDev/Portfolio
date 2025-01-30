@@ -1,10 +1,14 @@
+"use client";
 import { Building, InspectionPanel } from "lucide-react";
-import { dragCreate, initCanvasApp } from "./real-estate/canvas";
+import { dragCreate, handleDestroy, initCanvasApp } from "./real-estate/canvas";
 import { useEffect } from "react";
 
 export function SlideComplex() {
   useEffect(() => {
     initCanvasApp();
+    return () => {
+      handleDestroy();
+    };
   }, []);
   return (
     <main>

@@ -127,7 +127,7 @@ export async function initCanvasApp() {
   );
 
   root.addChild(...buildings.map((b) => b.container));
-  app.stage.addChild(root); 
+  app.stage.addChild(root);
 
   await app.init({ background: "black", resizeTo: window });
   const mainElement = document.querySelector("main");
@@ -214,10 +214,19 @@ function initEvents(): void {
   app.stage.on("pointermove", handlePointerMove);
   app.stage.on("pointerleave", handlePointerLeave);
   app.stage.on("wheel", handleWheel);
-  app.stage.on("contextmenu", (e) => e.preventDefault());
 
-  document.addEventListener("contextmenu", (e) => e.preventDefault());
+  window.addEventListener("contextmenu", handleContextMenu);
   Ticker.shared.add(tick);
+}
+
+function handleContextMenu(e: MouseEvent) {
+  e.preventDefault();
+}
+
+export function handleDestroy(): void {
+  app.destroy(true, { children: true, texture: true });
+  Ticker.shared.remove(tick);
+  window.removeEventListener("contextmenu", handleContextMenu);
 }
 
 function handlePointerDown(e: FederatedPointerEvent): void {
