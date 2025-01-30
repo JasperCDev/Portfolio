@@ -13,7 +13,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" style={{ colorScheme: "dark" }} className="dark h-full">
+    <html
+      lang="en"
+      style={{ colorScheme: "dark" }}
+      className="dark h-full"
+      suppressHydrationWarning
+    >
       <body className="h-full">
         <ThemeProvider
           attribute="class"
