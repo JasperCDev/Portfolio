@@ -37,10 +37,10 @@ export default function Home() {
       {currIndx >= list.length - 1 ? null : (
         <button
           onClick={handleClick}
-          className="absolute bottom-0 left-[50%] flex flex-col items-center rounded p-4 backdrop-md bg-black"
+          className="absolute bottom-0 left-[50%] translate-x-[-50%] flex flex-col items-center rounded p-4 pb-0 backdrop-md bg-slate-900"
         >
-          Learn More
-          <ChevronDown size={36} />
+          <span className="text-xl">Learn More</span>
+          <ChevronDown size={56} />
         </button>
       )}
     </div>

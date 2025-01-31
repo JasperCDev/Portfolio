@@ -116,6 +116,7 @@ function renderBuilding(building: Building, newState: BuildingState): void {
 export async function initCanvasApp() {
   app = new Application();
   root = new Container();
+  root.scale.set(0.3, 0.3);
 
   buildings = Array.from({ length: 10 }, (_, i) =>
     createBuilding(
