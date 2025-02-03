@@ -9,6 +9,9 @@ export default {
   ],
   theme: {
     extend: {
+      transitionDuration: {
+        "2000": "2000ms",
+      },
       colors: {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",

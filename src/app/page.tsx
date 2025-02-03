@@ -1,11 +1,12 @@
 "use client";
 
 import { ChevronDown } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { SlideHero } from "./slide_hero";
 import { SlideDashboard } from "./slide_dashboard";
 import { SlideComplex } from "./slide_complex";
 import { SlideFooter } from "./slide_footer";
+import { FadeText } from "./fade_text";
 
 let y = 0;
 let list = [SlideHero, SlideDashboard, SlideComplex, SlideFooter];
@@ -24,14 +25,23 @@ export default function Home() {
       <div
         ref={ref}
         className="transition-transform ease-in-out duration-1000"
-        onTransitionEnd={() => setCurrIndx((prev) => prev + 1)}
+        onTransitionEnd={(e) => {
+          if (e.target !== e.currentTarget) {
+            return;
+          }
+          setCurrIndx((prev) => prev + 1);
+        }}
       >
         {list.map((Slide, indx) => {
           let shown = indx === currIndx;
           if (!shown) {
             return <div key={indx} className="h-[100vh]"></div>;
           }
-          return <Slide key={indx} />;
+          return (
+            <Fragment key={indx}>
+              <Slide />
+            </Fragment>
+          );
         })}
       </div>
       {currIndx >= list.length - 1 ? null : (
