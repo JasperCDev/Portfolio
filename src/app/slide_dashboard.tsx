@@ -3,8 +3,9 @@ import { Separator } from "@radix-ui/react-separator";
 import { YAxis, Line, LineChart } from "recharts";
 import { PortfolioChart } from "./dashboard/overview/portfolio_chart";
 import { Box } from "@/components/ui/box";
-import { SidebarProvider } from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const minValueAll = Math.min(...balanceHistory.map((item) => item.all));
 const minValueStocks = Math.min(...balanceHistory.map((item) => item.stocks));
@@ -18,10 +19,12 @@ const balanceHistoryRealEstate = balanceHistory.map((b) => ({
 }));
 
 export function SlideDashboard() {
+  const isMobile = useIsMobile();
   return (
     <SidebarProvider>
       <AppSidebar />
       <main className="w-full">
+        {isMobile ? <SidebarTrigger /> : null}
         <div className="grid grid-cols-1 px-8 py-2 w-full">
           <section>
             <h1 className="text-2xl font-extrabold">Portfolio Overview</h1>
